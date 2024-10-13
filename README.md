@@ -40,3 +40,22 @@
     <a href="/">전화번호 저장/검색으로 돌아가기</a>
 </body>
 </html>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>전체 전화번호부</title>
+</head>
+<body>
+    <h1>전체 전화번호 목록</h1>
+    <ul>
+        {% for name, phone in phonebook %}
+            <li>{{ name }}: {{ phone }}</li>
+        {% endfor %}
+    </ul>
+    
+    <a href="/">전화번호 저장/검색으로 돌아가기</a>
+</body>
+</html>
