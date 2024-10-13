@@ -21,3 +21,22 @@
     <a href="/all">전체 전화번호 보기</a>
 </body>
 </html>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>전화번호 검색 결과</title>
+</head>
+<body>
+    <h1>검색 결과</h1>
+    {% if phone %}
+        <p>{{ name }}: {{ phone }}</p>
+    {% else %}
+        <p>{{ name }}에 대한 전화번호를 찾을 수 없습니다.</p>
+    {% endif %}
+    
+    <a href="/">전화번호 저장/검색으로 돌아가기</a>
+</body>
+</html>
