@@ -58,13 +58,6 @@ def generate_video():
 # Flask 애플리케이션 생성
 app = Flask(__name__)
 
-# 센서 데이터 저장
-sensor_data = {
-    "temperature": 0,
-    "humidity": 0,
-    "distance": 0
-}
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -90,39 +83,30 @@ def data():
     }
     return jsonify(data)
 
-# 주요 루프
-try:
-    while True:
-        # HTU21D 센서로 온도 및 습도 읽기
-        temperature = sensor.temperature
-        humidity = sensor.relative_humidity
+# 주요 루프 (Flask 서버에서 사용)
+@app.before_first_request
+def before_first_request():
+    # 반복적으로 센서 측정 및 LED 제어
+    def update_sensor_data():
+        while True:
+            # 초음파 센서로 거리 측정
+            distance = get_distance()
 
-        # 초음파 센서로 거리 측정
-        distance = get_distance()
+            # LED 상태 변경
+            if distance >= 11:  # 11cm 이상일 때 경고 상태로 전환
+                GPIO.output(led1_pin, False)  # 초록 LED 꺼짐
+                GPIO.output(led2_pin, True)   # 빨간 LED 켜짐
+                print("경고: 금고 문 열림 감지!")
+            else:
+                GPIO.output(led1_pin, True)   # 초록 LED 켜짐
+                GPIO.output(led2_pin, False)  # 빨간 LED 꺼짐
 
-        # LED 상태 변경
-        if distance >= 11:  # 11cm 이상일 때 경고 상태로 전환
-            GPIO.output(led1_pin, False)  # 초록 LED 꺼짐
-            GPIO.output(led2_pin, True)   # 빨간 LED 켜짐
-            print("경고: 금고 문 열림 감지!")
-        else:
-            GPIO.output(led1_pin, True)   # 초록 LED 켜짐
-            GPIO.output(led2_pin, False)  # 빨간 LED 꺼짐
+            time.sleep(1)
 
-        # 센서 데이터를 저장
-        sensor_data["temperature"] = temperature
-        sensor_data["humidity"] = humidity
-        sensor_data["distance"] = distance
-
-        time.sleep(1)
-
-except KeyboardInterrupt:
-    print("프로그램 종료 중...")
-finally:
-    camera.release()
-    GPIO.cleanup()
+    # 주 스레드에서 센서 업데이트 시작
+    import threading
+    threading.Thread(target=update_sensor_data, daemon=True).start()
 
 # Flask 애플리케이션 실행
-if __name__ == "__main__":
-    # 외부 IP에서 접속할 수 있도록 설정 (포트 8080)
+if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
