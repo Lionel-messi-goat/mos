@@ -3,160 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>미니 금고 대시보드</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <title>미니 금고 제어</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
         body {
-            background-color: #e9ecef;
+            background-color: #f8f9fa;
             font-family: 'Arial', sans-serif;
         }
         .container {
-            margin-top: 20px;
+            margin-top: 50px;
         }
-        .alert {
-            display: none;
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
         }
         .card {
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
         }
-        .video-container {
-            margin-top: 30px;
+        .video-container img {
+            width: 100%;
+            height: auto;
+        }
+        footer {
             text-align: center;
-        }
-        .inventory {
-            margin-top: 40px;
-        }
-        .btn-custom {
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-        }
-        .btn-custom:hover {
-            background-color: #0056b3;
+            margin-top: 20px;
+            color: #6c757d;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center text-primary">미니 금고 대시보드</h1>
-        
-        <!-- 온습도 데이터 -->
-        <div class="card mt-4">
-            <div class="card-body">
-                <h4 class="card-title text-success">금고 환경 데이터</h4>
-                <p class="card-text">온도: <span id="temperature">로딩 중...</span> °C</p>
-                <p class="card-text">습도: <span id="humidity">로딩 중...</span> %</p>
+        <div class="header">
+            <h1>미니 금고 제어 시스템</h1>
+            <p>금고 상태를 모니터링하고 제어합니다.</p>
+        </div>
+
+        <div class="row">
+            <!-- 센서 데이터 카드 -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        센서 데이터
+                    </div>
+                    <div class="card-body">
+                        <p><strong>온도:</strong> <span id="temperature">-</span> °C</p>
+                        <p><strong>습도:</strong> <span id="humidity">-</span> %</p>
+                        <p><strong>금고와의 거리:</strong> <span id="distance">-</span> cm</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 재고 관리 카드 -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        재고 관리
+                    </div>
+                    <div class="card-body">
+                        <ul id="inventory-list" class="list-group">
+                            <!-- 재고 목록이 여기 표시됩니다 -->
+                        </ul>
+                        <form id="inventory-form" class="mt-3">
+                            <div class="mb-2">
+                                <label for="item-name" class="form-label">항목 이름</label>
+                                <input type="text" id="item-name" class="form-control" required>
+                            </div>
+                            <div class="mb-2">
+                                <label for="item-quantity" class="form-label">수량</label>
+                                <input type="number" id="item-quantity" class="form-control" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">추가/수정</button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- 경고 메시지 -->
-        <div class="alert alert-danger mt-3" id="alert-message">
-            ⚠️ 경고! 비정상적인 환경 또는 무단 접근이 감지되었습니다.
-        </div>
-
-        <!-- 영상 스트리밍 -->
-        <div class="video-container">
-            <h4>실시간 카메라 피드</h4>
-            <img id="video-stream" src="/video_feed" class="img-fluid rounded shadow" alt="Live Stream">
-        </div>
-
-        <!-- 재고 관리 -->
-        <div class="inventory">
-            <h4>재고 관리</h4>
-            <table class="table table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>항목</th>
-                        <th>수량</th>
-                        <th>작업</th>
-                    </tr>
-                </thead>
-                <tbody id="inventory-table">
-                    <!-- 동적 행 -->
-                </tbody>
-            </table>
-            <button class="btn btn-custom" onclick="addInventory()">항목 추가</button>
+        <!-- 실시간 스트리밍 카드 -->
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                실시간 영상 스트리밍
+            </div>
+            <div class="card-body video-container">
+                <img id="video-stream" src="/video_feed" class="img-fluid rounded shadow" alt="Live Stream">
+            </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <footer>
+        <p>© 2024 미니 금고 제어 시스템</p>
+    </footer>
+
     <script>
-        // 온습도 데이터를 주기적으로 업데이트
-        function fetchSensorData() {
-            $.get('/data', function(data) {
-                if (data.temperature !== undefined && data.humidity !== undefined) {
-                    $('#temperature').text(data.temperature);
-                    $('#humidity').text(data.humidity);
-                }
-            }).fail(function() {
-                console.log("센서 데이터를 가져오지 못했습니다.");
-            });
+        // 센서 데이터 업데이트
+        function updateData() {
+            fetch('/data')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('temperature').innerText = data.temperature || 'N/A';
+                    document.getElementById('humidity').innerText = data.humidity || 'N/A';
+                    document.getElementById('distance').innerText = data.distance ? data.distance.toFixed(2) : 'N/A';
+                })
+                .catch(err => console.error('센서 데이터 로드 오류:', err));
         }
 
-        // 경고 메시지 표시
-        function checkAlertStatus() {
-            $.get('/data', function(data) {
-                if (data.temperature > 30 || data.humidity > 70) {
-                    $('#alert-message').show();
-                } else {
-                    $('#alert-message').hide();
-                }
-            });
+        // 재고 데이터 가져오기
+        function loadInventory() {
+            fetch('/inventory')
+                .then(response => response.json())
+                .then(data => {
+                    const inventoryList = document.getElementById('inventory-list');
+                    inventoryList.innerHTML = '';
+                    data.forEach(item => {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                        listItem.innerText = `${item.name}`;
+                        const badge = document.createElement('span');
+                        badge.className = 'badge bg-primary rounded-pill';
+                        badge.innerText = item.quantity;
+                        listItem.appendChild(badge);
+                        inventoryList.appendChild(listItem);
+                    });
+                })
+                .catch(err => console.error('재고 데이터 로드 오류:', err));
         }
 
-        // 재고 데이터 (예제용 데이터)
-        let inventory = [
-            { name: "금괴", quantity: 5 },
-            { name: "은화", quantity: 10 },
-        ];
-
-        // 재고 테이블 업데이트
-        function updateInventoryTable() {
-            const table = $('#inventory-table');
-            table.empty();
-            inventory.forEach((item, index) => {
-                table.append(`
-                    <tr>
-                        <td>${item.name}</td>
-                        <td>${item.quantity}</td>
-                        <td>
-                            <button class="btn btn-sm btn-success" onclick="increaseQuantity(${index})">+</button>
-                            <button class="btn btn-sm btn-danger" onclick="decreaseQuantity(${index})">-</button>
-                        </td>
-                    </tr>
-                `);
-            });
-        }
-
-        // 재고 관리 기능
-        function addInventory() {
-            const name = prompt("추가할 항목 이름을 입력하세요:");
-            const quantity = parseInt(prompt("수량을 입력하세요:"), 10);
-            if (name && !isNaN(quantity)) {
-                inventory.push({ name, quantity });
-                updateInventoryTable();
-            }
-        }
-
-        function increaseQuantity(index) {
-            inventory[index].quantity++;
-            updateInventoryTable();
-        }
-
-        function decreaseQuantity(index) {
-            if (inventory[index].quantity > 0) {
-                inventory[index].quantity--;
-                updateInventoryTable();
-            }
-        }
-
-        // 초기화
-        $(document).ready(function() {
-            fetchSensorData();
-            updateInventoryTable();
-            setInterval(fetchSensorData, 5000); // 5초마다 데이터 업데이트
-            setInterval(checkAlertStatus, 5000); // 5초마다 경고 상태 확인
+        // 재고 추가/수정
+        document.getElementById('inventory-form').addEventListener('submit', event => {
+            event.preventDefault();
+            const name = document.getElementById('item-name').value;
+            const quantity = parseInt(document.getElementById('item-quantity').value);
+            fetch('/inventory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, quantity })
+            })
+                .then(response => {
+                    if (response.ok) {
+                        loadInventory();
+                        document.getElementById('inventory-form').reset();
+                    } else {
+                        console.error('재고 업데이트 실패');
+                    }
+                })
+                .catch(err => console.error('재고 업데이트 오류:', err));
         });
+
+        // 주기적으로 데이터 업데이트
+        setInterval(updateData, 3000);
+        loadInventory();
     </script>
 </body>
 </html>
