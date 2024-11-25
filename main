@@ -2,7 +2,6 @@ import time
 import board
 import adafruit_htu21d
 import RPi.GPIO as GPIO
-import paho.mqtt.client as mqtt
 from flask import Flask, render_template, Response, jsonify
 import cv2
 import busio
@@ -12,12 +11,6 @@ trigger_pin = 20  # 초음파 센서 Trigger 핀
 echo_pin = 16     # 초음파 센서 Echo 핀
 led1_pin = 5      # 첫 번째 LED 핀 (초록색)
 led2_pin = 6      # 두 번째 LED 핀 (빨간색)
-
-# MQTT 설정
-mqtt_broker_ip = "192.168.137.66"  # 브로커 IP 주소
-client = mqtt.Client()
-client.connect(mqtt_broker_ip, 1883, 60)
-client.loop_start()
 
 # GPIO 초기화
 GPIO.setmode(GPIO.BCM)
@@ -65,8 +58,12 @@ def generate_video():
 # Flask 애플리케이션 생성
 app = Flask(__name__)
 
-# 이전 거리 상태 저장 변수
-prev_distance_within_10cm = False
+# 센서 데이터 저장
+sensor_data = {
+    "temperature": 0,
+    "humidity": 0,
+    "distance": 0
+}
 
 @app.route('/')
 def index():
@@ -103,19 +100,19 @@ try:
         # 초음파 센서로 거리 측정
         distance = get_distance()
 
-        # LED 상태 변경 및 영상 활성화
+        # LED 상태 변경
         if distance >= 11:  # 11cm 이상일 때 경고 상태로 전환
             GPIO.output(led1_pin, False)  # 초록 LED 꺼짐
             GPIO.output(led2_pin, True)   # 빨간 LED 켜짐
             print("경고: 금고 문 열림 감지!")
-            client.publish("safe/alert", "경고: 금고 문 열림 감지!")
         else:
             GPIO.output(led1_pin, True)   # 초록 LED 켜짐
             GPIO.output(led2_pin, False)  # 빨간 LED 꺼짐
 
-        # MQTT로 온습도 데이터 전송
-        client.publish("safe/temperature", f"{temperature}°C")
-        client.publish("safe/humidity", f"{humidity}%")
+        # 센서 데이터를 저장
+        sensor_data["temperature"] = temperature
+        sensor_data["humidity"] = humidity
+        sensor_data["distance"] = distance
 
         time.sleep(1)
 
@@ -124,3 +121,4 @@ except KeyboardInterrupt:
 finally:
     camera.release()
     GPIO.cleanup()
+
