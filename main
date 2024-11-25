@@ -1,0 +1,132 @@
+import Adafruit_DHT
+import RPi.GPIO as GPIO
+from flask import Flask, jsonify, render_template, Response
+import paho.mqtt.client as mqtt
+import threading
+import cv2
+import time
+
+# Flask 앱 초기화
+app = Flask(__name__)
+
+# DHT 센서 설정
+DHT_SENSOR = Adafruit_DHT.DHT11  # 또는 DHT22
+DHT_PIN = 4  # DHT 데이터 핀
+
+# 초음파 센서 설정
+TRIG = 23  # 초음파 송신 핀
+ECHO = 24  # 초음파 수신 핀
+
+# LED 핀 설정
+GREEN_LED = 17
+RED_LED = 27
+
+# MQTT 설정
+MQTT_BROKER = "test.mosquitto.org"
+MQTT_PORT = 1883
+MQTT_TOPIC = "mini_safe/alerts"
+
+# GPIO 초기화
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(TRIG, GPIO.OUT)
+GPIO.setup(ECHO, GPIO.IN)
+GPIO.setup(GREEN_LED, GPIO.OUT)
+GPIO.setup(RED_LED, GPIO.OUT)
+
+# 기본 상태 설정
+GPIO.output(GREEN_LED, GPIO.HIGH)
+GPIO.output(RED_LED, GPIO.LOW)
+
+# 카메라 초기화
+camera = cv2.VideoCapture(0)
+
+# MQTT 클라이언트 설정
+client = mqtt.Client()
+
+# MQTT 연결 콜백
+def on_connect(client, userdata, flags, rc):
+    print("Connected to MQTT Broker!")
+    client.subscribe(MQTT_TOPIC)
+
+# MQTT 메시지 콜백
+def on_message(client, userdata, msg):
+    print(f"MQTT Message Received: {msg.topic} -> {msg.payload.decode()}")
+
+client.on_connect = on_connect
+client.on_message = on_message
+
+# MQTT 연결
+client.connect(MQTT_BROKER, MQTT_PORT)
+threading.Thread(target=client.loop_forever, daemon=True).start()
+
+# 초음파 센서로 문 열림 감지
+def detect_door_open():
+    GPIO.output(TRIG, False)
+    time.sleep(2)
+
+    GPIO.output(TRIG, True)
+    time.sleep(0.00001)
+    GPIO.output(TRIG, False)
+
+    while GPIO.input(ECHO) == 0:
+        pulse_start = time.time()
+
+    while GPIO.input(ECHO) == 1:
+        pulse_end = time.time()
+
+    pulse_duration = pulse_end - pulse_start
+    distance = pulse_duration * 17150  # cm로 변환
+    return distance < 10  # 문 열림으로 간주할 거리
+
+# Flask 라우트
+@app.route('/')
+def index():
+    return render_template('index.html')  # 웹페이지 제공
+
+@app.route('/data')
+def get_sensor_data():
+    humidity, temperature = Adafruit_DHT.read(DHT_SENSOR, DHT_PIN)
+    if humidity is not None and temperature is not None:
+        return jsonify({
+            "temperature": round(temperature, 2),
+            "humidity": round(humidity, 2)
+        })
+    else:
+        return jsonify({"error": "Sensor failure"}), 500
+
+@app.route('/video_feed')
+def video_feed():
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+# 카메라 스트림 생성
+def generate_frames():
+    while True:
+        success, frame = camera.read()
+        if not success:
+            break
+        else:
+            _, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+# 경고 상태 관리
+def handle_alerts():
+    while True:
+        door_open = detect_door_open()
+        humidity, temperature = Adafruit_DHT.read(DHT_SENSOR, DHT_PIN)
+
+        if door_open or (humidity is not None and temperature is not None and (temperature > 30 or humidity > 70)):
+            GPIO.output(GREEN_LED, GPIO.LOW)
+            GPIO.output(RED_LED, GPIO.HIGH)
+            client.publish(MQTT_TOPIC, "Alert: Unauthorized access or environmental issue detected!")
+        else:
+            GPIO.output(GREEN_LED, GPIO.HIGH)
+            GPIO.output(RED_LED, GPIO.LOW)
+
+        time.sleep(1)
+
+# 메인 함수
+if __name__ == '__main__':
+    threading.Thread(target=handle_alerts, daemon=True).start()
+    app.run(host='0.0.0.0', port=5000)
