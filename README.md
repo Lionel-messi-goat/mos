@@ -1,19 +1,14 @@
-
-DeprecationWarning: Callback API version 1 is deprecated, update to latest version
-  client = mqtt.Client()
-Traceback (most recent call last):
-  File "/home/pi/pj/Project.py", line 19, in <module>
-    client.connect(mqtt_broker_ip, 1883, 60)
-  File "/home/pi/myenv/lib/python3.9/site-packages/paho/mqtt/client.py", line 1435, in connect
-    return self.reconnect()
-  File "/home/pi/myenv/lib/python3.9/site-packages/paho/mqtt/client.py", line 1598, in reconnect
-    self._sock = self._create_socket()
-  File "/home/pi/myenv/lib/python3.9/site-packages/paho/mqtt/client.py", line 4609, in _create_socket
-    sock = self._create_socket_connection()
-  File "/home/pi/myenv/lib/python3.9/site-packages/paho/mqtt/client.py", line 4640, in _create_socket_connection
-    return socket.create_connection(addr, timeout=self._connect_timeout, source_address=source)
-  File "/usr/lib/python3.9/socket.py", line 843, in create_connection
-    raise err
-  File "/usr/lib/python3.9/socket.py", line 831, in create_connection
-    sock.connect(sa)
-ConnectionRefusedError: [Errno 111] Connection refused
+^C프로그램 종료 중...
+ * Serving Flask app 'Project'
+ * Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://192.168.137.169:8080
+Press CTRL+C to quit
+ * Restarting with stat
+^C프로그램 종료 중...
+ * Debugger is active!
+ * Debugger PIN: 140-224-180
+192.168.137.1 - - [25/Nov/2024 21:28:01] "GET / HTTP/1.1" 200 -
+192.168.137.1 - - [25/Nov/2024 21:28:01] "GET /video_feed HTTP/1.1" 200 -
