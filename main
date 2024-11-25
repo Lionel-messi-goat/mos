@@ -124,5 +124,5 @@ finally:
 
 # Flask 애플리케이션 실행
 if __name__ == "__main__":
-    # 외부 IP에서 접속할 수 있도록 설정 (포트 5000)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # 외부 IP에서 접속할 수 있도록 설정 (포트 8080)
+    app.run(host='0.0.0.0', port=8080, debug=True)
